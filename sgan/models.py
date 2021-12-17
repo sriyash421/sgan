@@ -19,9 +19,9 @@ def make_mlp(dim_list, activation='relu', batch_norm=True, dropout=0):
 
 def get_noise(shape, noise_type):
     if noise_type == 'gaussian':
-        return torch.randn(*shape).cuda()
+        return torch.randn(*shape)
     elif noise_type == 'uniform':
-        return torch.rand(*shape).sub_(0.5).mul_(2.0).cuda()
+        return torch.rand(*shape).sub_(0.5).mul_(2.0)
     raise ValueError('Unrecognized noise type "%s"' % noise_type)
 
 
@@ -30,7 +30,7 @@ class Encoder(nn.Module):
     TrajectoryDiscriminator"""
     def __init__(
         self, embedding_dim=64, h_dim=64, mlp_dim=1024, num_layers=1,
-        dropout=0.0
+        dropout=0.0, device='cpu'
     ):
         super(Encoder, self).__init__()
 
@@ -38,6 +38,7 @@ class Encoder(nn.Module):
         self.h_dim = h_dim
         self.embedding_dim = embedding_dim
         self.num_layers = num_layers
+        self.device = device
 
         self.encoder = nn.LSTM(
             embedding_dim, h_dim, num_layers, dropout=dropout
@@ -47,8 +48,8 @@ class Encoder(nn.Module):
 
     def init_hidden(self, batch):
         return (
-            torch.zeros(self.num_layers, batch, self.h_dim).cuda(),
-            torch.zeros(self.num_layers, batch, self.h_dim).cuda()
+            torch.zeros(self.num_layers, batch, self.h_dim).to(self.device),
+            torch.zeros(self.num_layers, batch, self.h_dim).to(self.device)
         )
 
     def forward(self, obs_traj):
@@ -60,8 +61,8 @@ class Encoder(nn.Module):
         """
         # Encode observed Trajectory
         batch = obs_traj.size(1)
-        obs_traj_embedding = self.spatial_embedding(obs_traj.view(-1, 2))
-        obs_traj_embedding = obs_traj_embedding.view(
+        obs_traj_embedding = self.spatial_embedding(obs_traj.reshape(-1, 2))
+        obs_traj_embedding = obs_traj_embedding.reshape(
             -1, batch, self.embedding_dim
         )
         state_tuple = self.init_hidden(batch)
@@ -357,7 +358,8 @@ class TrajectoryGenerator(nn.Module):
         decoder_h_dim=128, mlp_dim=1024, num_layers=1, noise_dim=(0, ),
         noise_type='gaussian', noise_mix_type='ped', pooling_type=None,
         pool_every_timestep=True, dropout=0.0, bottleneck_dim=1024,
-        activation='relu', batch_norm=True, neighborhood_size=2.0, grid_size=8
+        activation='relu', batch_norm=True, neighborhood_size=2.0, grid_size=8,
+        device='cpu'
     ):
         super(TrajectoryGenerator, self).__init__()
 
@@ -378,13 +380,15 @@ class TrajectoryGenerator(nn.Module):
         self.noise_first_dim = 0
         self.pool_every_timestep = pool_every_timestep
         self.bottleneck_dim = 1024
+        self.device = device
 
         self.encoder = Encoder(
             embedding_dim=embedding_dim,
             h_dim=encoder_h_dim,
             mlp_dim=mlp_dim,
             num_layers=num_layers,
-            dropout=dropout
+            dropout=dropout,
+            device=device
         )
 
         self.decoder = Decoder(
@@ -466,7 +470,7 @@ class TrajectoryGenerator(nn.Module):
         if user_noise is not None:
             z_decoder = user_noise
         else:
-            z_decoder = get_noise(noise_shape, self.noise_type)
+            z_decoder = get_noise(noise_shape, self.noise_type).to(self.device)
 
         if self.noise_mix_type == 'global':
             _list = []
@@ -528,7 +532,7 @@ class TrajectoryGenerator(nn.Module):
 
         decoder_c = torch.zeros(
             self.num_layers, batch, self.decoder_h_dim
-        ).cuda()
+        ).to(self.device)
 
         state_tuple = (decoder_h, decoder_c)
         last_pos = obs_traj[-1]
@@ -550,7 +554,7 @@ class TrajectoryDiscriminator(nn.Module):
     def __init__(
         self, obs_len, pred_len, embedding_dim=64, h_dim=64, mlp_dim=1024,
         num_layers=1, activation='relu', batch_norm=True, dropout=0.0,
-        d_type='local'
+        d_type='local', device='cpu'
     ):
         super(TrajectoryDiscriminator, self).__init__()
 
@@ -560,13 +564,15 @@ class TrajectoryDiscriminator(nn.Module):
         self.mlp_dim = mlp_dim
         self.h_dim = h_dim
         self.d_type = d_type
+        self.device = device
 
         self.encoder = Encoder(
             embedding_dim=embedding_dim,
             h_dim=h_dim,
             mlp_dim=mlp_dim,
             num_layers=num_layers,
-            dropout=dropout
+            dropout=dropout,
+            device=device
         )
 
         real_classifier_dims = [h_dim, mlp_dim, 1]

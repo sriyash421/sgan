@@ -13,9 +13,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model_path', type=str)
 parser.add_argument('--num_samples', default=20, type=int)
 parser.add_argument('--dset_type', default='test', type=str)
+parser.add_argument('--use_gpu', action="store_true")
 
-
-def get_generator(checkpoint):
+def get_generator(checkpoint, device):
     args = AttrDict(checkpoint['args'])
     generator = TrajectoryGenerator(
         obs_len=args.obs_len,
@@ -34,9 +34,10 @@ def get_generator(checkpoint):
         bottleneck_dim=args.bottleneck_dim,
         neighborhood_size=args.neighborhood_size,
         grid_size=args.grid_size,
-        batch_norm=args.batch_norm)
+        batch_norm=args.batch_norm,
+        device=device)
     generator.load_state_dict(checkpoint['g_state'])
-    generator.cuda()
+    generator = generator.to(device)
     generator.train()
     return generator
 
@@ -55,12 +56,12 @@ def evaluate_helper(error, seq_start_end):
     return sum_
 
 
-def evaluate(args, loader, generator, num_samples):
+def evaluate(args, loader, generator, num_samples, device):
     ade_outer, fde_outer = [], []
     total_traj = 0
     with torch.no_grad():
         for batch in loader:
-            batch = [tensor.cuda() for tensor in batch]
+            batch = [tensor.to(device) for tensor in batch]
             (obs_traj, pred_traj_gt, obs_traj_rel, pred_traj_gt_rel,
              non_linear_ped, loss_mask, seq_start_end) = batch
 
@@ -100,14 +101,14 @@ def main(args):
         ]
     else:
         paths = [args.model_path]
-
+    device = torch.device("cuda" if args.use_gpu else "cpu")
     for path in paths:
-        checkpoint = torch.load(path)
-        generator = get_generator(checkpoint)
+        checkpoint = torch.load(path, map_location=device)
+        generator = get_generator(checkpoint, device)
         _args = AttrDict(checkpoint['args'])
         path = get_dset_path(_args.dataset_name, args.dset_type)
         _, loader = data_loader(_args, path)
-        ade, fde = evaluate(_args, loader, generator, args.num_samples)
+        ade, fde = evaluate(_args, loader, generator, args.num_samples, device)
         print('Dataset: {}, Pred Len: {}, ADE: {:.2f}, FDE: {:.2f}'.format(
             _args.dataset_name, _args.pred_len, ade, fde))
 
