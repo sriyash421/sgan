@@ -1,6 +1,8 @@
 models/
 datasets/
 .python-version
+results/*
+*.pt
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

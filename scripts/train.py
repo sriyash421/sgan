@@ -4,6 +4,8 @@ import logging
 import os
 import sys
 import time
+import random
+import numpy as np
 
 from collections import defaultdict
 
@@ -79,7 +81,7 @@ parser.add_argument('--l2_loss_weight', default=0, type=float)
 parser.add_argument('--best_k', default=1, type=int)
 
 # Output
-parser.add_argument('--output_dir', default=os.getcwd())
+parser.add_argument('--output_dir', default='results/')
 parser.add_argument('--print_every', default=5, type=int)
 parser.add_argument('--checkpoint_every', default=100, type=int)
 parser.add_argument('--checkpoint_name', default='checkpoint')
@@ -91,7 +93,14 @@ parser.add_argument('--num_samples_check', default=5000, type=int)
 parser.add_argument('--use_gpu', default=1, type=int)
 parser.add_argument('--timing', default=0, type=int)
 parser.add_argument('--gpu_num', default="0", type=str)
+parser.add_argument('--exp_name', type=str, default='test')
+parser.add_argument('-seed', type=int, default=0)
 
+
+def set_seed(seed):
+    torch.manual_seed(seed)
+    random.seed(0)
+    np.random.seed(0)
 
 def init_weights(m):
     classname = m.__class__.__name__
@@ -111,7 +120,11 @@ def get_dtypes(args):
 def main(args):
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_num
     device = torch.device("cuda:{}".format(args.gpu_num)) \
-        if args.use_gpu else torch.device('cpu')
+        if args.use_gpu and torch.cuda.is_available() else torch.device('cpu')
+    set_seed(args.seed)
+    output_dir = os.path.join(args.output_dir, args.exp_name, args.seed)
+    os.makedirs(output_dir, exist_ok=True)
+
     train_path = get_dset_path(args.dataset_name, 'train')
     val_path = get_dset_path(args.dataset_name, 'val')
 
@@ -185,7 +198,7 @@ def main(args):
     if args.checkpoint_start_from is not None:
         restore_path = args.checkpoint_start_from
     elif args.restore_from_checkpoint == 1:
-        restore_path = os.path.join(args.output_dir,
+        restore_path = os.path.join(output_dir,
                                     '%s_with_model.pt' % args.checkpoint_name)
 
     if restore_path is not None and os.path.isfile(restore_path):
@@ -333,7 +346,7 @@ def main(args):
                 checkpoint['d_state'] = discriminator.state_dict()
                 checkpoint['d_optim_state'] = optimizer_d.state_dict()
                 checkpoint_path = os.path.join(
-                    args.output_dir, '%s_with_model.pt' % args.checkpoint_name
+                    output_dir, '%s_with_model.pt' % args.checkpoint_name
                 )
                 logger.info('Saving checkpoint to {}'.format(checkpoint_path))
                 torch.save(checkpoint, checkpoint_path)
@@ -342,7 +355,7 @@ def main(args):
                 # Save a checkpoint with no model weights by making a shallow
                 # copy of the checkpoint excluding some items
                 checkpoint_path = os.path.join(
-                    args.output_dir, '%s_no_model.pt' % args.checkpoint_name)
+                    output_dir, '%s_no_model.pt' % args.checkpoint_name)
                 logger.info('Saving checkpoint to {}'.format(checkpoint_path))
                 key_blacklist = [
                     'g_state', 'd_state', 'g_best_state', 'g_best_nl_state',
