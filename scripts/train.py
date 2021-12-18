@@ -119,7 +119,7 @@ def get_dtypes(args):
 
 def main(args):
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_num
-    device = torch.device("cuda:{}".format(args.gpu_num)) \
+    device = torch.device("cuda") \
         if args.use_gpu and torch.cuda.is_available() else torch.device('cpu')
     set_seed(args.seed)
     output_dir = os.path.join(args.output_dir, args.exp_name, str(args.seed))
@@ -401,9 +401,9 @@ def discriminator_step(
 
     # Compute loss with optional gradient penalty
     data_loss = d_loss_fn(scores_real, scores_fake)
-    losses['D_data_loss'] = data_loss.cpu().item()
+    losses['D_data_loss'] = data_loss.item()
     loss += data_loss
-    losses['D_total_loss'] = loss.cpu().item()
+    losses['D_total_loss'] = loss.item()
 
     optimizer_d.zero_grad()
     loss.backward()
@@ -449,7 +449,7 @@ def generator_step(
             _g_l2_loss_rel = torch.min(_g_l2_loss_rel) / torch.sum(
                 loss_mask[start:end])
             g_l2_loss_sum_rel += _g_l2_loss_rel
-        losses['G_l2_loss_rel'] = g_l2_loss_sum_rel.cpu().item()
+        losses['G_l2_loss_rel'] = g_l2_loss_sum_rel.item()
         loss += g_l2_loss_sum_rel
 
     traj_fake = torch.cat([obs_traj, pred_traj_fake], dim=0)
@@ -459,8 +459,8 @@ def generator_step(
     discriminator_loss = g_loss_fn(scores_fake)
 
     loss += discriminator_loss
-    losses['G_discriminator_loss'] = discriminator_loss.cpu().item()
-    losses['G_total_loss'] = loss.cpu().item()
+    losses['G_discriminator_loss'] = discriminator_loss.item()
+    losses['G_total_loss'] = loss.item()
 
     optimizer_g.zero_grad()
     loss.backward()
@@ -518,21 +518,21 @@ def check_accuracy(
             scores_real = discriminator(traj_real, traj_real_rel, seq_start_end)
 
             d_loss = d_loss_fn(scores_real, scores_fake)
-            d_losses.append(d_loss.cpu().item())
+            d_losses.append(d_loss.item())
 
-            g_l2_losses_abs.append(g_l2_loss_abs.cpu().item())
-            g_l2_losses_rel.append(g_l2_loss_rel.cpu().item())
-            disp_error.append(ade.cpu().item())
-            disp_error_l.append(ade_l.cpu().item())
-            disp_error_nl.append(ade_nl.cpu().item())
-            f_disp_error.append(fde.cpu().item())
-            f_disp_error_l.append(fde_l.cpu().item())
-            f_disp_error_nl.append(fde_nl.cpu().item())
+            g_l2_losses_abs.append(g_l2_loss_abs.item())
+            g_l2_losses_rel.append(g_l2_loss_rel.item())
+            disp_error.append(ade.item())
+            disp_error_l.append(ade_l.item())
+            disp_error_nl.append(ade_nl.item())
+            f_disp_error.append(fde.item())
+            f_disp_error_l.append(fde_l.item())
+            f_disp_error_nl.append(fde_nl.item())
 
             loss_mask_sum += torch.numel(loss_mask.data)
             total_traj += pred_traj_gt.size(1)
-            total_traj_l += torch.sum(linear_ped).cpu().item()
-            total_traj_nl += torch.sum(non_linear_ped).cpu().item()
+            total_traj_l += torch.sum(linear_ped).item()
+            total_traj_nl += torch.sum(non_linear_ped).item()
             if limit and total_traj >= args.num_samples_check:
                 break
 
