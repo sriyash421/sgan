@@ -6,9 +6,9 @@ python scripts/train.py \
 --delim 'tab' \
 --print_every 100 \
 --pred_len 8 \
---loader_num_workers 0 \
+--loader_num_workers 4 \
 --d_steps 1 \
---batch_size 64 \
+--batch_size 32 \
 --num_epochs 200 \
 --num_layers 1 \
 --best_k 20 \
@@ -27,7 +27,7 @@ python scripts/train.py \
 --noise_mix_type 'global' \
 --decoder_h_dim_g 32 \
 --pooling_type 'pool_net' \
---use_gpu 0 \
+--use_gpu 1 \
 --num_iterations 9012 \
 --noise_type 'gaussian' \
 --encoder_h_dim_g 32 \

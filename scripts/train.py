@@ -122,7 +122,7 @@ def main(args):
     device = torch.device("cuda:{}".format(args.gpu_num)) \
         if args.use_gpu and torch.cuda.is_available() else torch.device('cpu')
     set_seed(args.seed)
-    output_dir = os.path.join(args.output_dir, args.exp_name, args.seed)
+    output_dir = os.path.join(args.output_dir, args.exp_name, str(args.seed))
     os.makedirs(output_dir, exist_ok=True)
 
     train_path = get_dset_path(args.dataset_name, 'train')
@@ -248,6 +248,7 @@ def main(args):
         epoch += 1
         logger.info('Starting epoch {}'.format(epoch))
         for batch in train_loader:
+#            torch.cuda.empty_cache()
             if args.timing == 1:
                 torch.cuda.synchronize()
                 t1 = time.time()
