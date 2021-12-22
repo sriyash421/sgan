@@ -383,11 +383,11 @@ def discriminator_step(
 ):
     batch = [tensor.to(device) for tensor in batch]
     (obs_traj, pred_traj_gt, obs_traj_rel, pred_traj_gt_rel, non_linear_ped,
-     loss_mask, seq_start_end, _, _) = batch
+     loss_mask, seq_start_end, ego_traj, ego_traj_rel) = batch
     losses = {}
     loss = torch.zeros(1).to(pred_traj_gt)
 
-    generator_out = generator(obs_traj, obs_traj_rel, seq_start_end)
+    generator_out = generator(obs_traj, obs_traj_rel, seq_start_end, ego_traj, ego_traj_rel)
 
     pred_traj_fake_rel = generator_out
     pred_traj_fake = relative_to_abs(pred_traj_fake_rel, obs_traj[-1])
@@ -489,12 +489,12 @@ def check_accuracy(
         for batch in loader:
             batch = [tensor.to(device) for tensor in batch]
             (obs_traj, pred_traj_gt, obs_traj_rel, pred_traj_gt_rel,
-             non_linear_ped, loss_mask, seq_start_end) = batch
+             non_linear_ped, loss_mask, seq_start_end, ego_traj, ego_traj_rel) = batch
             linear_ped = 1 - non_linear_ped
             loss_mask = loss_mask[:, args.obs_len:]
 
             pred_traj_fake_rel = generator(
-                obs_traj, obs_traj_rel, seq_start_end
+                obs_traj, obs_traj_rel, seq_start_end, ego_traj, ego_traj_rel
             )
             pred_traj_fake = relative_to_abs(pred_traj_fake_rel, obs_traj[-1])
 
