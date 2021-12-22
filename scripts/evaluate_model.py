@@ -1,11 +1,13 @@
 import argparse
 import os
 import torch
-
+import logging
+import sys
 from attrdict import AttrDict
 
 from sgan.data.loader import data_loader
-from sgan.models import TrajectoryGenerator
+# from sgan.models import TrajectoryGenerator
+from sgan.conditional_models import ConditionalTrajectoryGenerator
 from sgan.losses import displacement_error, final_displacement_error
 from sgan.utils import relative_to_abs, get_dset_path
 
@@ -15,9 +17,13 @@ parser.add_argument('--num_samples', default=20, type=int)
 parser.add_argument('--dset_type', default='test', type=str)
 parser.add_argument('--use_gpu', action="store_true")
 
+FORMAT = '[%(levelname)s: %(filename)s: %(lineno)4d]: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT, stream=sys.stdout)
+logger = logging.getLogger(__name__)
+
 def get_generator(checkpoint, device):
     args = AttrDict(checkpoint['args'])
-    generator = TrajectoryGenerator(
+    generator = ConditionalTrajectoryGenerator(
         obs_len=args.obs_len,
         pred_len=args.pred_len,
         embedding_dim=args.embedding_dim,
@@ -36,9 +42,10 @@ def get_generator(checkpoint, device):
         grid_size=args.grid_size,
         batch_norm=args.batch_norm,
         device=device)
-    generator.load_state_dict(checkpoint['g_state'])
+    # generator.load_state_dict(checkpoint['g_state'])
     generator = generator.to(device)
     generator.train()
+    logger.info(generator)
     return generator
 
 
@@ -63,14 +70,14 @@ def evaluate(args, loader, generator, num_samples, device):
         for batch in loader:
             batch = [tensor.to(device) for tensor in batch]
             (obs_traj, pred_traj_gt, obs_traj_rel, pred_traj_gt_rel,
-             non_linear_ped, loss_mask, seq_start_end) = batch
+             non_linear_ped, loss_mask, seq_start_end, ego_traj, ego_traj_rel) = batch
 
             ade, fde = [], []
             total_traj += pred_traj_gt.size(1)
 
             for _ in range(num_samples):
                 pred_traj_fake_rel = generator(
-                    obs_traj, obs_traj_rel, seq_start_end
+                    obs_traj, obs_traj_rel, seq_start_end, ego_traj, ego_traj_rel
                 )
                 pred_traj_fake = relative_to_abs(
                     pred_traj_fake_rel, obs_traj[-1]

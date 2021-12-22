@@ -174,6 +174,7 @@ class TrajectoryDataset(Dataset):
             (start, end)
             for start, end in zip(cum_start_idx, cum_start_idx[1:])
         ]
+        self.num_peds_in_seq = num_peds_in_seq
 
     def __len__(self):
         return self.num_seq

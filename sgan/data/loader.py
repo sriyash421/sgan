@@ -1,10 +1,10 @@
 from torch.utils.data import DataLoader
 
-from sgan.data.trajectories import TrajectoryDataset, seq_collate
-
+# from sgan.data.trajectories import TrajectoryDataset
+from sgan.data.conditional_trajectories import ConditionalTrajectoryDataset, seq_collate
 
 def data_loader(args, path):
-    dset = TrajectoryDataset(
+    dset = ConditionalTrajectoryDataset(
         path,
         obs_len=args.obs_len,
         pred_len=args.pred_len,

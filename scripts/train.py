@@ -17,7 +17,8 @@ from sgan.data.loader import data_loader
 from sgan.losses import gan_g_loss, gan_d_loss, l2_loss
 from sgan.losses import displacement_error, final_displacement_error
 
-from sgan.models import TrajectoryGenerator, TrajectoryDiscriminator
+from sgan.models import TrajectoryDiscriminator
+from sgan.conditional_models import ConditionalTrajectoryGenerator as TrajectoryGenerator
 from sgan.utils import int_tuple, bool_flag, get_total_norm
 from sgan.utils import relative_to_abs, get_dset_path
 
@@ -382,7 +383,7 @@ def discriminator_step(
 ):
     batch = [tensor.to(device) for tensor in batch]
     (obs_traj, pred_traj_gt, obs_traj_rel, pred_traj_gt_rel, non_linear_ped,
-     loss_mask, seq_start_end) = batch
+     loss_mask, seq_start_end, _, _) = batch
     losses = {}
     loss = torch.zeros(1).to(pred_traj_gt)
 
@@ -420,7 +421,7 @@ def generator_step(
 ):
     batch = [tensor.to(device) for tensor in batch]
     (obs_traj, pred_traj_gt, obs_traj_rel, pred_traj_gt_rel, non_linear_ped,
-     loss_mask, seq_start_end) = batch
+     loss_mask, seq_start_end, ego_traj, ego_traj_rel) = batch
     losses = {}
     loss = torch.zeros(1).to(pred_traj_gt)
     g_l2_loss_rel = []
@@ -428,7 +429,7 @@ def generator_step(
     loss_mask = loss_mask[:, args.obs_len:]
 
     for _ in range(args.best_k):
-        generator_out = generator(obs_traj, obs_traj_rel, seq_start_end)
+        generator_out = generator(obs_traj, obs_traj_rel, seq_start_end, ego_traj, ego_traj_rel)
 
         pred_traj_fake_rel = generator_out
         pred_traj_fake = relative_to_abs(pred_traj_fake_rel, obs_traj[-1])
