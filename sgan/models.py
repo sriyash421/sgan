@@ -67,7 +67,9 @@ class Encoder(nn.Module):
         )
         state_tuple = self.init_hidden(batch)
         output, state = self.encoder(obs_traj_embedding, state_tuple)
-        final_h = state[0]
+        # print(state[0].shape)
+        final_h = state[0].permute(1, 0, 2)
+        # print(final_h.shape)
         return final_h
 
 

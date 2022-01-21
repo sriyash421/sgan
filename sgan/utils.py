@@ -93,3 +93,18 @@ def relative_to_abs(rel_traj, start_pos):
     start_pos = torch.unsqueeze(start_pos, dim=1)
     abs_traj = displacement + start_pos
     return abs_traj.permute(1, 0, 2)
+
+def optimized_relative_to_abs(rel_traj, start_pos):
+    """
+    Inputs:
+    - rel_traj: pytorch tensor of shape (seq_len, batch, 2)
+    - start_pos: pytorch tensor of shape (batch, 2)
+    Outputs:
+    - abs_traj: pytorch tensor of shape (seq_len, batch, 2)
+    """
+    rel_traj = rel_traj.permute(0, 2, 1, 3)
+    displacement = torch.cumsum(rel_traj, dim=2)
+    # start_pos = torch.unsqueeze(start_pos, dim=2)
+    # print(displacement.shape, start_pos.shape)
+    abs_traj = displacement + start_pos[None, :, None, :]
+    return abs_traj.permute(0, 2, 1, 3)

@@ -18,7 +18,7 @@ def pop_row(T, i):
     return T, r
 
 
-def seq_collate(data):
+def cond_seq_collate(data):
     (obs_seq_list, pred_seq_list, obs_seq_rel_list, pred_seq_rel_list,
      non_linear_ped_list, loss_mask_list, ego_seq_list, ego_seq_rel_list) = zip(*data)
 
@@ -51,7 +51,7 @@ class ConditionalTrajectoryDataset(TrajectoryDataset):
 
     def __init__(
         self, data_dir, obs_len=8, pred_len=12, skip=1, threshold=0.002,
-        min_ped=1, delim='\t'
+        min_ped=3, delim='\t'
     ):
         """
         Args:

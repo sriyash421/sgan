@@ -1,5 +1,6 @@
 python train.py \
-  --dataset_name 'zara1' \
+  --exp_name 'eth-final' \
+  --dataset_name 'eth' \
   --delim tab \
   --d_type 'local' \
   --pred_len 8 \

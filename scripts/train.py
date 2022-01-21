@@ -19,6 +19,7 @@ from sgan.losses import displacement_error, final_displacement_error
 
 from sgan.models import TrajectoryDiscriminator
 from sgan.conditional_models import ConditionalTrajectoryGenerator as TrajectoryGenerator
+# from sgan.conditional_models2 import CPoolTrajectoryGenerator as TrajectoryGenerator
 from sgan.utils import int_tuple, bool_flag, get_total_norm
 from sgan.utils import relative_to_abs, get_dset_path
 
@@ -122,6 +123,7 @@ def main(args):
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_num
     device = torch.device("cuda") \
         if args.use_gpu and torch.cuda.is_available() else torch.device('cpu')
+    logger.info(f"Device: {device}")
     set_seed(args.seed)
     output_dir = os.path.join(args.output_dir, args.exp_name, str(args.seed))
     os.makedirs(output_dir, exist_ok=True)
@@ -132,9 +134,9 @@ def main(args):
     long_dtype, float_dtype = get_dtypes(args)
 
     logger.info("Initializing train dataset")
-    train_dset, train_loader = data_loader(args, train_path)
+    train_dset, train_loader = data_loader(args, train_path, True)
     logger.info("Initializing val dataset")
-    _, val_loader = data_loader(args, val_path)
+    _, val_loader = data_loader(args, val_path, True)
 
     iterations_per_epoch = len(train_dset) / args.batch_size / args.d_steps
     if args.num_epochs:
